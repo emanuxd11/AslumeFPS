@@ -102,12 +102,12 @@ class Controller  {
     }
     if (this.moveLeft) {
       right.set(-1, 0, 0).applyQuaternion(this.camera.quaternion);
-      forward.y = 0;
+      right.y = 0;
       this.direction.add(right);
     }
     if (this.moveRight) {
       right.set(1, 0, 0).applyQuaternion(this.camera.quaternion);
-      forward.y = 0;
+      right.y = 0;
       this.direction.add(right);
     }
 
