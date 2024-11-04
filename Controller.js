@@ -38,10 +38,14 @@ class Controller  {
 
     this.mouseX = 0;
     this.mouseY = 0;
+    this.pitch = 0;
+    this.yaw = 0;
+    this.mouseMoving = false;
 
     document.addEventListener('mousemove', (event) => {
       this.mouseX = (event.movementX || 0) * 0.002;
       this.mouseY = (event.movementY || 0) * 0.002;
+      this.mouseMoving = true;
     });
 
     document.addEventListener('keydown', (event) => {

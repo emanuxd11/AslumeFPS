@@ -60,6 +60,13 @@ class App {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     document.getElementById("canvas").appendChild(this.renderer.domElement);
     window.addEventListener('resize', this.onResize.bind(this), false);
+
+    const canvas = document.querySelector('canvas');
+    canvas.addEventListener("click", async () => {
+      canvas.requestPointerLock();
+
+      this.goFullScreen();
+    });
   }
 
   /**
@@ -70,7 +77,7 @@ class App {
 
     // Create a basic perspective camera
     const perspective1 = new THREE.PerspectiveCamera(75, aspect, 0.1, 2000); // first parameter is fov
-    perspective1.position.set(-5.5, 6, 5.5);
+    perspective1.position.set(0, 5, 0);
     this.cameras['Perspective'] = perspective1;
 
   }
@@ -80,8 +87,8 @@ class App {
    * @param { String } cameraName 
    */
   setActiveCamera(cameraName) {
-    this.activeCameraName = cameraName
-    this.activeCamera = this.cameras[this.activeCameraName]
+    this.activeCameraName = cameraName;
+    this.activeCamera = this.cameras[this.activeCameraName];
   }
 
   /**
@@ -95,8 +102,8 @@ class App {
     // camera changed?
     if (this.lastCameraName !== this.activeCameraName) {
       this.lastCameraName = this.activeCameraName;
-      this.activeCamera = this.cameras[this.activeCameraName]
-      document.getElementById("camera").innerHTML = this.activeCameraName
+      this.activeCamera = this.cameras[this.activeCameraName];
+      document.getElementById("camera").innerHTML = this.activeCameraName;
 
       // call on resize to update the camera aspect ratio
       // among other things
@@ -142,6 +149,23 @@ class App {
   }
 
   /**
+   * 
+   */
+  goFullScreen() {
+    const canvas = document.querySelector('canvas');
+
+    if (canvas.requestFullscreen) {
+      canvas.requestFullscreen();
+    } else if (canvas.mozRequestFullScreen) {
+      canvas.mozRequestFullScreen();
+    } else if (canvas.webkitRequestFullscreen) {
+      canvas.webkitRequestFullscreen();
+    } else if (canvas.msRequestFullscreen) {
+      canvas.msRequestFullscreen();
+    }
+  }
+
+  /**
   * the main render function. Called in a requestAnimationFrame loop
   */
   render() {
@@ -153,18 +177,45 @@ class App {
       this.contents.update();
     }
 
-    if (this.controller.moveForward) this.controller.direction.z = -1;
-    if (this.controller.moveBackward) this.controller.direction.z = 1;
-    if (this.controller.moveLeft) this.controller.direction.x = -1;
-    if (this.controller.moveRight) this.controller.direction.x = 1;
+    // Calculate the camera's forward and right vectors
+    const forward = new THREE.Vector3();
+    const right = new THREE.Vector3();
 
-    this.controller.direction.normalize(); // Keep consistent movement speed in all directions
+    // Adjust movement based on the camera's orientation
+    if (this.controller.moveForward) {
+      forward.set(0, 0, -1).applyQuaternion(this.activeCamera.quaternion);
+      this.controller.direction.add(forward);
+    }
+    if (this.controller.moveBackward) {
+      forward.set(0, 0, 1).applyQuaternion(this.activeCamera.quaternion);
+      this.controller.direction.add(forward);
+    }
+    if (this.controller.moveLeft) {
+      right.set(-1, 0, 0).applyQuaternion(this.activeCamera.quaternion);
+      this.controller.direction.add(right);
+    }
+    if (this.controller.moveRight) {
+      right.set(1, 0, 0).applyQuaternion(this.activeCamera.quaternion);
+      this.controller.direction.add(right);
+    }
 
-    this.activeCamera.rotation.y -= this.controller.mouseX;
-    this.activeCamera.rotation.x -= this.controller.mouseY;
+    // Normalize to keep consistent movement speed in all directions
+    this.controller.direction.normalize();
 
-    // Constrain the vertical look angle to avoid flipping
-    this.activeCamera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.activeCamera.rotation.x));
+    // Track yaw and pitch separately
+    if (this.controller.mouseMoving) {
+      this.controller.yaw -= this.controller.mouseX;
+      this.controller.pitch -= this.controller.mouseY;
+      this.controller.mouseMoving = false;
+    }
+
+    // Clamp the pitch to prevent the camera from flipping
+    this.controller.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.controller.pitch));
+
+    // Create quaternion from yaw and pitch
+    const quaternion = new THREE.Quaternion();
+    quaternion.setFromEuler(new THREE.Euler(this.controller.pitch, this.controller.yaw, 0, 'YXZ'));
+    this.activeCamera.quaternion.copy(quaternion);
 
     this.activeCamera.position.add(this.controller.direction.clone().multiplyScalar(this.controller.speed));
     this.controller.direction.set(0, 0, 0);
