@@ -45,11 +45,13 @@ class App {
     this.stats.showPanel(0) // 0: fps, 1: ms, 2: mb, 3+: custom
     document.body.appendChild(this.stats.dom)
 
-    // setup controller
-    this.controller = new Controller(this);
-
     this.initCameras();
     this.setActiveCamera('Perspective')
+
+    // setup controller
+    this.controller = new Controller({
+      camera: this.activeCamera,
+    });
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.shadowMap.enabled = true;
@@ -177,51 +179,11 @@ class App {
       this.contents.update();
     }
 
-    // Calculate the camera's forward and right vectors
-    const forward = new THREE.Vector3();
-    const right = new THREE.Vector3();
-
-    // Adjust movement based on the camera's orientation
-    if (this.controller.moveForward) {
-      forward.set(0, 0, -1).applyQuaternion(this.activeCamera.quaternion);
-      this.controller.direction.add(forward);
-    }
-    if (this.controller.moveBackward) {
-      forward.set(0, 0, 1).applyQuaternion(this.activeCamera.quaternion);
-      this.controller.direction.add(forward);
-    }
-    if (this.controller.moveLeft) {
-      right.set(-1, 0, 0).applyQuaternion(this.activeCamera.quaternion);
-      this.controller.direction.add(right);
-    }
-    if (this.controller.moveRight) {
-      right.set(1, 0, 0).applyQuaternion(this.activeCamera.quaternion);
-      this.controller.direction.add(right);
-    }
-
-    // Normalize to keep consistent movement speed in all directions
-    this.controller.direction.normalize();
-
-    // Track yaw and pitch separately
-    if (this.controller.mouseMoving) {
-      this.controller.yaw -= this.controller.mouseX;
-      this.controller.pitch -= this.controller.mouseY;
-      this.controller.mouseMoving = false;
-    }
-
-    // Clamp the pitch to prevent the camera from flipping
-    this.controller.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.controller.pitch));
-
-    // Create quaternion from yaw and pitch
-    const quaternion = new THREE.Quaternion();
-    quaternion.setFromEuler(new THREE.Euler(this.controller.pitch, this.controller.yaw, 0, 'YXZ'));
-    this.activeCamera.quaternion.copy(quaternion);
-
-    this.activeCamera.position.add(this.controller.direction.clone().multiplyScalar(this.controller.speed));
-    this.controller.direction.set(0, 0, 0);
+    this.controller.controlMovement();
+    this.controller.controlCamera();
 
     // required if controls.enableDamping or controls.autoRotate are set to true
-    // this.controls.update();
+    // this.controls.update(); // not related to fps camera
 
     // render the scene
     this.renderer.render(this.scene, this.activeCamera);

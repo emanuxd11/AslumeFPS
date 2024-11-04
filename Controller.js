@@ -19,8 +19,8 @@ class Controller  {
    * 
    * @param { App } app The application object 
    */
-  constructor(app) {
-    this.app = app;
+  constructor({camera}) {
+    this.camera = camera;
     this.init();
   }
 
@@ -65,6 +65,57 @@ class Controller  {
         case 'd': this.moveRight = false; break;
       }
     });
+  }
+
+  controlCamera() {
+    // Track yaw and pitch separately
+    if (this.mouseMoving) {
+      this.yaw -= this.mouseX;
+      this.pitch -= this.mouseY;
+      this.mouseMoving = false;
+    }
+
+    // Clamp the pitch to prevent the camera from flipping
+    this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+
+    // Create quaternion from yaw and pitch
+    const quaternion = new THREE.Quaternion();
+    quaternion.setFromEuler(new THREE.Euler(this.pitch, this.yaw, 0, 'YXZ'));
+    this.camera.quaternion.copy(quaternion);
+  }
+
+  controlMovement() {
+    // Calculate the camera's forward and right vectors
+    const forward = new THREE.Vector3();
+    const right = new THREE.Vector3();
+
+    // Adjust movement based on the camera's orientation
+    if (this.moveForward) {
+      forward.set(0, 0, -1).applyQuaternion(this.camera.quaternion);
+      forward.y = 0;
+      this.direction.add(forward);
+    }
+    if (this.moveBackward) {
+      forward.set(0, 0, 1).applyQuaternion(this.camera.quaternion);
+      forward.y = 0;
+      this.direction.add(forward);
+    }
+    if (this.moveLeft) {
+      right.set(-1, 0, 0).applyQuaternion(this.camera.quaternion);
+      forward.y = 0;
+      this.direction.add(right);
+    }
+    if (this.moveRight) {
+      right.set(1, 0, 0).applyQuaternion(this.camera.quaternion);
+      forward.y = 0;
+      this.direction.add(right);
+    }
+
+    // Normalize to keep consistent movement speed in all directions
+    this.direction.normalize();
+
+    this.camera.position.add(this.direction.clone().multiplyScalar(this.speed));
+    this.direction.set(0, 0, 0);
   }
 
 }
