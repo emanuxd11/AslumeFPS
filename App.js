@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { FirstPersonControls } from 'three/addons/controls/FirstPersonControls.js';
 import { Contents } from './Contents.js';
+import { Controller } from './Controller.js';
 import { GuiInterface } from './GuiInterface.js';
 import Stats from 'three/addons/libs/stats.module.js'
 
@@ -10,13 +11,6 @@ import Stats from 'three/addons/libs/stats.module.js'
  * This class contains the application object
  */
 class App {
-
-  static KEYS = {
-    'a': 65,
-    's': 83,
-    'w': 87,
-    'd': 68,
-  };
 
   /**
    * the constructor
@@ -51,6 +45,9 @@ class App {
     this.stats.showPanel(0) // 0: fps, 1: ms, 2: mb, 3+: custom
     document.body.appendChild(this.stats.dom)
 
+    // setup controller
+    this.controller = new Controller(this);
+
     this.initCameras();
     this.setActiveCamera('Perspective')
 
@@ -80,7 +77,7 @@ class App {
 
   /**
    * sets the active camera by name
-   * @param {String} cameraName 
+   * @param { String } cameraName 
    */
   setActiveCamera(cameraName) {
     this.activeCameraName = cameraName
@@ -105,17 +102,17 @@ class App {
       // among other things
       this.onResize()
 
-      if (this.controls === null) {
-        // Orbit controls allow the camera to orbit around a target.
-        this.controls = new OrbitControls(this.activeCamera, this.renderer.domElement);
-        this.controls.enableDamping = true;
-        this.controls.dampingFactor = 0.05;
-        this.controls.enableZoom = true;
-        this.controls.target = new THREE.Vector3(0, 5, 0);
-        this.controls.update();
-      } else {
-        this.controls.object = this.activeCamera
-      }
+      // if (this.controls === null) {
+      //   // Orbit controls allow the camera to orbit around a target.
+      //   this.controls = new OrbitControls(this.activeCamera, this.renderer.domElement);
+      //   this.controls.enableDamping = true;
+      //   this.controls.dampingFactor = 0.05;
+      //   this.controls.enableZoom = true;
+      //   this.controls.target = new THREE.Vector3(0, 5, 0);
+      //   this.controls.update();
+      // } else {
+      //   this.controls.object = this.activeCamera
+      // }
     }
   }
 
@@ -148,16 +145,32 @@ class App {
   * the main render function. Called in a requestAnimationFrame loop
   */
   render() {
-    this.stats.begin()
-    this.updateCameraIfRequired()
+    this.stats.begin();
+    this.updateCameraIfRequired();
 
     // update the animation if contents were provided
     if (this.activeCamera !== undefined && this.activeCamera !== null) {
-      this.contents.update()
+      this.contents.update();
     }
 
+    if (this.controller.moveForward) this.controller.direction.z = -1;
+    if (this.controller.moveBackward) this.controller.direction.z = 1;
+    if (this.controller.moveLeft) this.controller.direction.x = -1;
+    if (this.controller.moveRight) this.controller.direction.x = 1;
+
+    this.controller.direction.normalize(); // Keep consistent movement speed in all directions
+
+    this.activeCamera.rotation.y -= this.controller.mouseX;
+    this.activeCamera.rotation.x -= this.controller.mouseY;
+
+    // Constrain the vertical look angle to avoid flipping
+    this.activeCamera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.activeCamera.rotation.x));
+
+    this.activeCamera.position.add(this.controller.direction.clone().multiplyScalar(this.controller.speed));
+    this.controller.direction.set(0, 0, 0);
+
     // required if controls.enableDamping or controls.autoRotate are set to true
-    this.controls.update();
+    // this.controls.update();
 
     // render the scene
     this.renderer.render(this.scene, this.activeCamera);
@@ -165,8 +178,8 @@ class App {
     // subsequent async calls to the render loop
     requestAnimationFrame(this.render.bind(this));
 
-    this.lastCameraName = this.activeCameraName
-    this.stats.end()
+    // this.lastCameraName = this.activeCameraName;
+    this.stats.end();
   }
 }
 
