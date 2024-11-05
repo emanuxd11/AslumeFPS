@@ -41,6 +41,7 @@ class Wall extends SceneObject {
 
     this.width = width;
     this.height = height;
+    this.collisionBox = null;
 
     this.initMaterials();
   }
@@ -50,9 +51,16 @@ class Wall extends SceneObject {
    */
   build() {
     const plane = new THREE.PlaneGeometry(this.width, this.height);
-    this.planeMesh = new THREE.Mesh(plane, Wall.material);
-    Shadows.enableShadows(this.planeMesh);
-    this.sceneObject.add(this.planeMesh);
+    const planeMesh = new THREE.Mesh(plane, Wall.material);
+    Shadows.enableShadows(planeMesh);
+    this.sceneObject.add(planeMesh);
+
+    // Create bounding box for the entire group
+    this.collisionBox = new THREE.Box3().setFromObject(planeMesh);
+
+    const boxHelper = new THREE.BoxHelper(planeMesh, 0xff0000);
+    this.sceneObject.add(boxHelper);
+    this.app.addCollisionBox(this.collisionBox);
   }
 
 }

@@ -19,8 +19,11 @@ class Controller  {
    * 
    * @param { App } app The application object 
    */
-  constructor({camera}) {
+  constructor({app, camera}) {
+    this.app = app;
     this.camera = camera;
+    this.cameraBox = new THREE.Box3().setFromCenterAndSize(camera.position, new THREE.Vector3(1, 1, 1));
+
     this.init();
   }
 
@@ -28,7 +31,7 @@ class Controller  {
    * Initialize the gui interface
    */
   init() {
-    this.speed = 0.2;
+    this.speed = 0.05;
     this.direction = new THREE.Vector3();
 
     this.moveForward = false;
@@ -85,6 +88,16 @@ class Controller  {
   }
 
   controlMovement() {
+    this.app.collisionBoxes.forEach(objectBox => {
+  
+      let collisionDetected = false;
+      if (objectBox.intersectsBox(this.cameraBox)) {
+        collisionDetected = true;
+        console.log("collision detected")
+        return;
+      } 
+    });
+
     // Calculate the camera's forward and right vectors
     const forward = new THREE.Vector3();
     const right = new THREE.Vector3();
@@ -116,6 +129,8 @@ class Controller  {
 
     this.camera.position.add(this.direction.clone().multiplyScalar(this.speed));
     this.direction.set(0, 0, 0);
+    // update camera collision box position
+    this.cameraBox.setFromCenterAndSize(this.camera.position, new THREE.Vector3(1, 1, 1));
   }
 
 }

@@ -16,22 +16,22 @@ class App {
    * the constructor
    */
   constructor() {
-    this.scene = null
-    this.stats = null
+    this.scene = null;
+    this.stats = null;
 
     // camera related attributes
-    this.activeCamera = null
-    this.activeCameraName = null
-    this.lastCameraName = null
-    this.cameras = []
-    this.frustumSize = 20
+    this.activeCamera = null;
+    this.activeCameraName = null;
+    this.lastCameraName = null;
+    this.cameras = [];
+    this.frustumSize = 20;
 
     // other attributes
-    this.renderer = null
-    this.controls = null
-    this.gui = null
-    this.axis = null
-    this.contents == null
+    this.renderer = null;
+    this.controls = null;
+    this.gui = null;
+    this.axis = null;
+    this.contents == null;
   }
 
   /**
@@ -41,15 +41,19 @@ class App {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x101010);
 
-    this.stats = new Stats()
-    this.stats.showPanel(0) // 0: fps, 1: ms, 2: mb, 3+: custom
-    document.body.appendChild(this.stats.dom)
+    this.stats = new Stats();
+    this.stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+    document.body.appendChild(this.stats.dom);
+
+    // init collision box array
+    this.collisionBoxes = [];
 
     this.initCameras();
-    this.setActiveCamera('Perspective')
+    this.setActiveCamera('Perspective');
 
     // setup controller
     this.controller = new Controller({
+      app: this,
       camera: this.activeCamera,
     });
 
@@ -78,7 +82,7 @@ class App {
     const aspect = window.innerWidth / window.innerHeight;
 
     // Create a basic perspective camera
-    const perspective1 = new THREE.PerspectiveCamera(75, aspect, 0.1, 2000); // first parameter is fov
+    const perspective1 = new THREE.PerspectiveCamera(80, aspect, 0.1, 2000); // first parameter is fov
     perspective1.position.set(0, 5, 0);
     this.cameras['Perspective'] = perspective1;
 
@@ -147,7 +151,17 @@ class App {
    * @param { GuiInterface } contents the gui interface object
    */
   setGui(gui) {
-    this.gui = gui
+    this.gui = gui;
+  }
+
+  /**
+   * 
+   * @param { THREE.BOX3 } collisionBox 
+   * @returns 
+   */
+  addCollisionBox(collisionBox) {
+    if (collisionBox == null) return;
+    this.collisionBoxes.push(collisionBox);
   }
 
   /**
